@@ -1,27 +1,53 @@
+// const express = require("express");
+// const axios = require("axios");
+// const cors = require("cors");
+
+// const app = express();
+// app.use(cors());
+
+// app.get("/proxy", async (req, res) => {
+//     try {
+//         const url = req.query.url;
+//         if (!url) {
+//             return res.status(400).send("Please provide a URL!");
+//         }
+//         const response = await axios.get(url);
+//         res.send(response.data);
+//     } catch (error) {
+//         res.status(500).send("Error fetching the page!");
+//     }
+// });
+
+// // Use dynamic port assigned by Render
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+
 const express = require("express");
-const axios = require("axios");
+const { createProxyMiddleware } = require("http-proxy-middleware");
 const cors = require("cors");
 
 const app = express();
 app.use(cors());
 
-app.get("/proxy", async (req, res) => {
-    try {
-        const url = req.query.url;
-        if (!url) {
-            return res.status(400).send("Please provide a URL!");
-        }
-        const response = await axios.get(url);
-        res.send(response.data);
-    } catch (error) {
-        res.status(500).send("Error fetching the page!");
-    }
-});
+app.use(
+  "/proxy",
+  createProxyMiddleware({
+    target: "https://example.com", // Default target
+    changeOrigin: true,
+    secure: false,
+    onProxyReq: (proxyReq, req, res) => {
+      // Dynamically set the target URL
+      const targetUrl = req.query.url;
+      if (targetUrl) {
+        proxyReq.setHeader("Host", new URL(targetUrl).host);
+        proxyReq.path = new URL(targetUrl).pathname;
+      }
+    },
+  })
+);
 
-// Use dynamic port assigned by Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
-
 
 
 // // const express = require("express");
