@@ -18,9 +18,12 @@ app.get("/proxy", async (req, res) => {
     }
 });
 
-// // // Use dynamic port assigned by Render
-// // const PORT = process.env.PORT || 3000;
-// // app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+// Use dynamic port assigned by Render
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+
+
+
 // // const express = require("express");
 // // const axios = require("axios");
 // // const cors = require("cors");
