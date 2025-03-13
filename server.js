@@ -22,32 +22,96 @@
 // const PORT = process.env.PORT || 3000;
 // app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
 
+// const express = require("express");
+// const { createProxyMiddleware } = require("http-proxy-middleware");
+// const cors = require("cors");
+
+// const app = express();
+// app.use(cors());
+
+// app.use(
+//   "/proxy",
+//   createProxyMiddleware({
+//     target: "https://example.com", // Default target
+//     changeOrigin: true,
+//     secure: false,
+//     onProxyReq: (proxyReq, req, res) => {
+//       // Dynamically set the target URL
+//       const targetUrl = req.query.url;
+//       if (targetUrl) {
+//         proxyReq.setHeader("Host", new URL(targetUrl).host);
+//         proxyReq.path = new URL(targetUrl).pathname;
+//       }
+//     },
+//   })
+// );
+
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+
+
+
+
+
 const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
+const puppeteer = require("puppeteer");
 const cors = require("cors");
 
 const app = express();
 app.use(cors());
 
+// 🔹 Standard Proxy Middleware (For Static Sites)
 app.use(
   "/proxy",
   createProxyMiddleware({
-    target: "https://example.com", // Default target
+    target: "https://example.com", // Default target (ignored, set dynamically)
     changeOrigin: true,
     secure: false,
+    selfHandleResponse: true, // Allows response customization
     onProxyReq: (proxyReq, req, res) => {
-      // Dynamically set the target URL
       const targetUrl = req.query.url;
       if (targetUrl) {
         proxyReq.setHeader("Host", new URL(targetUrl).host);
         proxyReq.path = new URL(targetUrl).pathname;
       }
     },
+    onProxyRes: (proxyRes, req, res) => {
+      let body = "";
+      proxyRes.on("data", (chunk) => (body += chunk));
+      proxyRes.on("end", () => {
+        res.send(body);
+      });
+    },
   })
 );
 
+// 🔹 Puppeteer-based Proxy (For JavaScript-Heavy Sites)
+app.get("/puppeteer", async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url) return res.status(400).send("Please provide a valid URL.");
+
+    const browser = await puppeteer.launch({ headless: "new" });
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "networkidle2" });
+
+    const content = await page.content();
+    await browser.close();
+
+    res.send(content);
+  } catch (error) {
+    console.error("Puppeteer Error:", error);
+    res.status(500).send("Failed to load page with Puppeteer.");
+  }
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Proxy running on port ${PORT}`));
+
+
+
+
 
 
 // // const express = require("express");
